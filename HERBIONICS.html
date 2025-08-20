@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Herbionics Demo – Parkinson’s Disease</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0c162d;
+      color: #eee;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      color: #6decc4;
+      padding: 15px;
+    }
+
+    #gameContainer {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      margin: 20px;
+      gap: 30px;
+    }
+
+    .board {
+      background: #1b2b4a;
+      border: 2px solid #4a9fc9;
+      border-radius: 12px;
+      width: 400px;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .board h2 {
+      margin: 5px;
+      color: #eee;
+    }
+
+    .inflammation {
+      width: 25px;
+      height: 25px;
+      background: red;
+      border-radius: 50%;
+      position: absolute;
+      cursor: pointer;
+      box-shadow: 0 0 8px red;
+    }
+
+    .nanobot {
+      width: 20px;
+      height: 20px;
+      background: #6decc4;
+      border-radius: 50%;
+      position: absolute;
+      box-shadow: 0 0 8px #6decc4;
+    }
+
+    .stats {
+      margin-top: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      background: #23395d;
+      border-radius: 8px;
+      height: 15px;
+      margin: 5px 0;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #6decc4, #4a9fc9);
+      transition: width 0.3s;
+    }
+
+    button {
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #1e5f8a, #4a9fc9);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #4a9fc9, #6decc4);
+    }
+
+    /* Popup */
+    .popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .popup-content {
+      background: #0c162d;
+      padding: 25px;
+      border-radius: 15px;
+      text-align: center;
+      border: 2px solid #4a9fc9;
+      box-shadow: 0 0 25px rgba(0,0,0,0.8);
+      max-width: 350px;
+      width: 90%;
+      animation: fadeIn 0.4s ease;
+    }
+
+    .popup-content h2 {
+      color: #6decc4;
+      margin-bottom: 15px;
+    }
+
+    .popup-content button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: linear-gradient(90deg, #1e5f8a, #4a9fc9);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .popup-content button:hover {
+      background: linear-gradient(90deg, #4a9fc9, #6decc4);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌿 Herbionics Simulation – Parkinson’s Disease 🌿</h1>
+
+  <div id="gameContainer">
+    <!-- Human Board -->
+    <div class="board" id="humanBoard">
+      <h2>Human Mode</h2>
+      <div class="stats">
+        Accuracy: <span id="humanAccuracy">0%</span><br>
+        Time: <span id="humanTime">0.0s</span>
+        <div class="progress-bar"><div class="progress" id="humanProgress"></div></div>
+      </div>
+    </div>
+
+    <!-- AI Board -->
+    <div class="board" id="aiBoard">
+      <h2>AI Mode</h2>
+      <div class="stats">
+        Accuracy: <span id="aiAccuracy">0%</span><br>
+        Time: <span id="aiTime">0.0s</span>
+        <div class="progress-bar"><div class="progress" id="aiProgress"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div>
+    <button id="startBtn">START GAME</button>
+    <button id="aiBtn">RUN AI DEMO</button>
+    <button id="resetBtn">RESET</button>
+  </div>
+
+  <!-- Game Over Popup -->
+  <div id="gameOverPopup" class="popup">
+    <div class="popup-content">
+        <h2>Game Over</h2>
+        <p><strong>Your Accuracy:</strong> <span id="popupHumanAccuracy">0%</span></p>
+        <p><strong>Your Time:</strong> <span id="popupHumanTime">0.0s</span></p>
+        <hr>
+        <p><strong>AI Accuracy:</strong> 95%</p>
+        <p><strong>AI Time:</strong> 0.8s</p>
+        
+        <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+            <button id="closePopup">Close</button>
+            <button id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const humanBoard = document.getElementById('humanBoard');
+    const aiBoard = document.getElementById('aiBoard');
+    const startBtn = document.getElementById('startBtn');
+    const aiBtn = document.getElementById('aiBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    const humanAccuracy = document.getElementById('humanAccuracy');
+    const humanTime = document.getElementById('humanTime');
+    const humanProgress = document.getElementById('humanProgress');
+
+    const aiAccuracy = document.getElementById('aiAccuracy');
+    const aiTime = document.getElementById('aiTime');
+    const aiProgress = document.getElementById('aiProgress');
+
+    const popup = document.getElementById('gameOverPopup');
+    const closePopup = document.getElementById('closePopup');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    const popupHumanAccuracy = document.getElementById('popupHumanAccuracy');
+    const popupHumanTime = document.getElementById('popupHumanTime');
+
+    let totalZones = 8;
+    let foundCount = 0;
+    let startTime;
+    let timerInterval;
+    let gameStarted = false;
+
+    // Generate inflammation zones
+    function createZones(board, clickable = false) {
+      for (let i = 0; i < totalZones; i++) {
+        const zone = document.createElement('div');
+        zone.classList.add('inflammation');
+        zone.style.top = Math.random() * 350 + 'px';
+        zone.style.left = Math.random() * 350 + 'px';
+
+        if (clickable) {
+          zone.addEventListener('click', () => {
+            zone.remove();
+            foundCount++;
+            updateStats();
+          });
+        }
+        board.appendChild(zone);
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      let elapsed = (Date.now() - startTime) / 1000;
+      humanTime.textContent = elapsed.toFixed(1) + 's';
+      let accuracy = (foundCount / totalZones) * 100;
+      humanAccuracy.textContent = accuracy.toFixed(0) + '%';
+      humanProgress.style.width = accuracy + '%';
+
+      if (foundCount === totalZones) {
+        clearInterval(timerInterval);
+        showGameOver();
+      }
+    }
+
+    // Human game
+    startBtn.addEventListener('click', () => {
+      if (gameStarted) return;
+      gameStarted = true;
+      foundCount = 0;
+      humanBoard.querySelectorAll('.inflammation').forEach(el => el.remove());
+
+      createZones(humanBoard, true);
+
+      startTime = Date.now();
+      timerInterval = setInterval(updateStats, 100);
+    });
+
+    // AI Demo
+    aiBtn.addEventListener('click', () => {
+      aiBoard.querySelectorAll('.inflammation').forEach(el => el.remove());
+      aiBoard.querySelectorAll('.nanobot').forEach(el => el.remove());
+
+      createZones(aiBoard, false);
+
+      let nanobots = [];
+      let zones = [...aiBoard.querySelectorAll('.inflammation')];
+
+      zones.forEach(zone => {
+        let bot = document.createElement('div');
+        bot.classList.add('nanobot');
+        bot.style.top = '200px';
+        bot.style.left = '200px';
+        aiBoard.appendChild(bot);
+        nanobots.push({ el: bot, target: zone });
+      });
+
+      let step = 0;
+      let aiStart = Date.now();
+      let interval = setInterval(() => {
+        step += 0.1;
+        nanobots.forEach((bot, idx) => {
+          let target = bot.target.getBoundingClientRect();
+          let parent = aiBoard.getBoundingClientRect();
+          let targetX = target.left - parent.left;
+          let targetY = target.top - parent.top;
+
+          let botX = parseFloat(bot.el.style.left);
+          let botY = parseFloat(bot.el.style.top);
+
+          bot.el.style.left = botX + (targetX - botX) * 0.1 + 'px';
+          bot.el.style.top = botY + (targetY - botY) * 0.1 + 'px';
+
+          if (Math.abs(botX - targetX) < 5 && Math.abs(botY - targetY) < 5) {
+            bot.target.remove();
+            bot.el.remove();
+            nanobots.splice(idx, 1);
+          }
+        });
+
+        let elapsed = (Date.now() - aiStart) / 1000;
+        aiTime.textContent = elapsed.toFixed(1) + 's';
+        let accuracy = ((totalZones - nanobots.length) / totalZones) * 100;
+        aiAccuracy.textContent = accuracy.toFixed(0) + '%';
+        aiProgress.style.width = accuracy + '%';
+
+        if (nanobots.length === 0) {
+          clearInterval(interval);
+          setTimeout(() => showGameOver(), 500);
+        }
+      }, 80);
+    });
+
+    // Show Game Over Popup
+    function showGameOver() {
+      popupHumanAccuracy.textContent = humanAccuracy.textContent;
+      popupHumanTime.textContent = humanTime.textContent;
+      popup.style.display = 'flex';
+    }
+
+    // Close Popup
+    closePopup.addEventListener('click', () => {
+      popup.style.display = 'none';
+    });
+
+    // Play Again
+    playAgainBtn.addEventListener('click', () => {
+      popup.style.display = 'none';
+      resetGame();
+    });
+
+    // Reset Game
+    function resetGame() {
+      gameStarted = false;
+      foundCount = 0;
+
+      document.querySelectorAll('.inflammation').forEach(el => el.remove());
+      document.querySelectorAll('.nanobot').forEach(el => el.remove());
+
+      humanAccuracy.textContent = '0%';
+      humanProgress.style.width = '0%';
+      humanTime.textContent = '0.0s';
+
+      aiAccuracy.textContent = '0%';
+      aiProgress.style.width = '0%';
+      aiTime.textContent = '0.0s';
+
+      startBtn.textContent = 'START GAME';
+      startBtn.disabled = false;
+    }
+
+    resetBtn.addEventListener('click', resetGame);
+  </script>
+</body>
+</html>
